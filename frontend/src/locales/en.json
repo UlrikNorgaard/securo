@@ -1186,6 +1186,8 @@
     "appendNotes": "Append tags/notes",
     "ignoreAction": "Ignore transaction",
     "ignoreActionHint": "(no value needed)",
+    "bucketNextMonth": "Bucket as next month",
+    "bucketNextMonthHint": "(no value needed — counts this transaction toward the 1st of the following month, e.g. an early-payday salary)",
     "selectCategory": "Select category...",
     "selectAccount": "Select account...",
     "turnOn": "Turn on",
