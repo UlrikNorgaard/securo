@@ -71,7 +71,14 @@ x-backend-env: &backend-env
   AGENTS_EMBEDDING_MODEL: ${AGENTS_EMBEDDING_MODEL:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
 
 x-backend-base: &backend-base
-  image: ghcr.io/securo-finance/securo-backend:latest
+  # Built from this fork's source instead of pulling upstream's
+  # ghcr.io/securo-finance/securo-backend:latest image — same reasoning as
+  # the frontend service below: backend/rule_engine.py and
+  # rule_service.py changes (the "bucket as next month" rule action) only
+  # exist in this fork, so they need building, not pulling.
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
   environment: *backend-env
   # Lets a connection point at a model server running on the host (LM Studio,
   # Ollama, llama.cpp) as http://host.docker.internal:<port>. Docker Desktop
