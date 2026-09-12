@@ -53,6 +53,7 @@ _ALLOWED_CONDITION_OPS = {
 }
 _ALLOWED_ACTION_OPS = {
     "set_category", "set_payee", "set_description", "append_notes", "ignore",
+    "bucket_next_month",
 }
 
 
@@ -1243,6 +1244,7 @@ def _rule_effect_state(tx: Transaction) -> tuple:
         tx.description_is_rule_managed,
         tx.notes,
         tx.is_ignored,
+        tx.effective_bill_date,
     )
 
 
@@ -1420,6 +1422,7 @@ async def apply_single_rule(
             tx.description_is_rule_managed,
             tx.notes,
             tx.is_ignored,
+            tx.effective_bill_date,
         )
         apply_rule_actions(
             actions,
@@ -1437,6 +1440,7 @@ async def apply_single_rule(
             tx.description_is_rule_managed,
             tx.notes,
             tx.is_ignored,
+            tx.effective_bill_date,
         )
         if before != after:
             count += 1
@@ -1474,6 +1478,7 @@ async def apply_all_rules(session: AsyncSession, workspace_id: uuid.UUID) -> int
             tx.description_is_rule_managed,
             tx.notes,
             tx.is_ignored,
+            tx.effective_bill_date,
         )
         if tx.description_is_rule_managed:
             if tx.original_description is not None:
@@ -1505,6 +1510,7 @@ async def apply_all_rules(session: AsyncSession, workspace_id: uuid.UUID) -> int
             tx.description_is_rule_managed,
             tx.notes,
             tx.is_ignored,
+            tx.effective_bill_date,
         )
         if matched or before != after:
             count += 1
