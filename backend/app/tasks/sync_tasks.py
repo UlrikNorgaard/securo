@@ -14,7 +14,12 @@ from app.services import connection_service
 
 logger = logging.getLogger(__name__)
 
-STALE_THRESHOLD = timedelta(hours=4)
+# 24h / 4 = 6h. PSD2 aggregators (Enable Banking included) commonly cap
+# unattended background pulls at 4/day per connection; the hourly beat
+# check just means a connection becomes eligible again within an hour of
+# crossing this threshold, not that it's hit more often than the threshold
+# allows.
+STALE_THRESHOLD = timedelta(hours=6)
 
 
 def _make_session_maker():
