@@ -243,4 +243,22 @@ def apply_rule_actions(
         elif op == "ignore":
             tx.is_ignored = True
 
+        elif op == "bucket_next_month":
+            # For income that posts a few days before the month it's
+            # actually "for" (an early payday) — e.g. a salary landing on
+            # the 25th or the last day of the prior month. Sets both
+            # fields directly (mirroring what apply_effective_date()'s
+            # override branch does) rather than relying on that function
+            # running again after rules, since call order varies across
+            # the sync/import pipelines that invoke apply_rule_actions.
+            bucketed = _first_of_next_month(tx.date)
+            tx.effective_bill_date = bucketed
+            tx.effective_date = bucketed
+
     return category_already_set
+
+
+def _first_of_next_month(d: date) -> date:
+    if d.month == 12:
+        return date(d.year + 1, 1, 1)
+    return date(d.year, d.month + 1, 1)
