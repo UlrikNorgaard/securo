@@ -432,8 +432,8 @@ function TransactionForm({
   const [payeeId, setPayeeId] = useState(seed?.payee_id ?? '')
   const [accountId, setAccountId] = useState(seed?.account_id ?? sortedAccounts[0]?.id ?? '')
   const [notes, setNotes] = useState(seed?.notes ?? '')
-  // Manual CC bucketing override (issue #92). Empty = auto. Visible only
-  // when the selected account is a credit card.
+  // Manual reporting-date/bucketing override (issue #92, extended beyond
+  // CC accounts). Empty = auto. Visible for every account type.
   const [effectiveBillDate, setEffectiveBillDate] = useState(seed?.effective_bill_date ?? '')
   const [convertedAmount, setConvertedAmount] = useState(
     seed?.amount_primary != null ? formatAmountInput(seed.amount_primary, displayLocale, 8) : ''
@@ -735,15 +735,16 @@ function TransactionForm({
           fxFields.amount_primary = null
           fxFields.fx_rate_used = null
         }
-        // Active CC account ⇒ surface effective_bill_date in the payload
+        // Surface effective_bill_date in the payload for every account type
         // (sent both for synced and manual edits since the user can hand-
-        // correct the bucketing on either; null clears the override back to
-        // auto bucketing).
-        const selectedAcc = accounts.find(a => a.id === accountId)
-        const isCcSelected = selectedAcc?.type === 'credit_card'
-        const overridePayload: Partial<Transaction> = isCcSelected
-          ? { effective_bill_date: effectiveBillDate || null }
-          : {}
+        // correct the bucketing on any account, not just credit cards —
+        // e.g. a salary that posts a few days before/after the month it's
+        // "for"; null clears the override back to auto bucketing). The
+        // backend's reporting_date_col() already honors this override
+        // unconditionally, regardless of account type or accounting mode.
+        const overridePayload: Partial<Transaction> = {
+          effective_bill_date: effectiveBillDate || null,
+        }
         // Splits ride along on the same payload — the backend treats a
         // missing `splits` field as untouched and a present payload as
         // full replacement. To clear existing splits when the user
@@ -1137,26 +1138,43 @@ function TransactionForm({
         </label>
       )}
 
-      {/* Manual bill-cycle override (issue #92). CC accounts only. Empty
-          input = use auto bucketing (Pluggy bill_id when available, cycle
-          math otherwise). Setting the date forces this tx into the bill
-          whose due_date matches. */}
+      {/* Manual reporting-date override (issue #92, extended beyond CC
+          accounts). Empty input = auto bucketing (for CC accounts: Pluggy
+          bill_id when available, cycle math otherwise; for every other
+          account: the transaction's own date). Setting a date forces this
+          tx to count toward that month everywhere — dashboard, reports,
+          budgets — via reporting_date_col() on the backend. Useful for
+          salary/income that posts a few days before or after the month
+          it's actually "for". */}
       {(() => {
         const selectedAcc = accounts.find(a => a.id === accountId)
-        if (selectedAcc?.type !== 'credit_card') return null
+        const isCc = selectedAcc?.type === 'credit_card'
         return (
           <div className="space-y-2">
             <Label>
-              {t('transactions.effectiveBillDate', 'Effective bill date')}{' '}
+              {isCc
+                ? t('transactions.effectiveBillDate', 'Effective bill date')
+                : t('transactions.effectiveReportingDate', 'Reporting month override')}{' '}
               <span className="text-muted-foreground font-normal text-xs">
-                ({t('transactions.effectiveBillDateHint', 'manual, overrides the automatic cycle')})
+                (
+                {isCc
+                  ? t('transactions.effectiveBillDateHint', 'manual, overrides the automatic cycle')
+                  : t(
+                      'transactions.effectiveReportingDateHint',
+                      'manual, controls which month this counts toward in your dashboard & reports'
+                    )}
+                )
               </span>
             </Label>
             <div className="inline-flex items-center gap-1">
               <DatePickerInput
                 value={effectiveBillDate}
                 onChange={setEffectiveBillDate}
-                placeholder={t('transactions.effectiveBillDatePlaceholder', 'Bill due date (optional)')}
+                placeholder={
+                  isCc
+                    ? t('transactions.effectiveBillDatePlaceholder', 'Bill due date (optional)')
+                    : t('transactions.effectiveReportingDatePlaceholder', 'Reporting date (optional)')
+                }
               />
               {effectiveBillDate && (
                 <button
