@@ -126,7 +126,15 @@ services:
       - "8000"
 
   frontend:
-    image: ghcr.io/securo-finance/securo-frontend:latest
+    # Built from this fork's source instead of pulling upstream's
+    # ghcr.io/securo-finance/securo-frontend:latest image, because our
+    # frontend changes (e.g. the account-agnostic reporting-date override)
+    # only exist here. Coolify's dockercompose build pack builds any
+    # service with a `build:` key and pulls the rest — see docker-compose
+    # deploy logs ("Pulling & building required images").
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     # Unbound host port (Docker assigns a random free one) so Traefik's
     # auto-detect (keyed off the container-side port, per Coolify's
     # dockercompose build_pack behavior) still works without risking a
