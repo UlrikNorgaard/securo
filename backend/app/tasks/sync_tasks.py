@@ -20,12 +20,6 @@ from app.services import connection_service
 
 logger = logging.getLogger(__name__)
 
-# 24h / 4 = 6h. PSD2 aggregators (Enable Banking included) commonly cap
-# unattended background pulls at 4/day per connection; the hourly beat
-# check just means a connection becomes eligible again within an hour of
-# crossing this threshold, not that it's hit more often than the threshold
-# allows.
-STALE_THRESHOLD = timedelta(hours=6)
 PROVIDER_REFRESH_THRESHOLD = timedelta(hours=20)
 
 
@@ -52,7 +46,9 @@ async def _sync_all() -> int:
     """Find stale connections and sync each one."""
     engine, session_maker = _make_session_maker()
     try:
-        cutoff = datetime.now(timezone.utc) - STALE_THRESHOLD
+        cutoff = datetime.now(timezone.utc) - timedelta(
+            hours=get_settings().bank_sync_min_interval_hours
+        )
         synced = 0
 
         async with session_maker() as session:
